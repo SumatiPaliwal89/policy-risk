@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guidewire PolicyCenter — AI Risk Assessment</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header>
+    <div class="header-inner">
+      <div class="header-brand">
+        <span class="brand-icon">⚡</span>
+        <span class="brand-name">PolicyCenter</span>
+        <span class="brand-module">AI Risk Assessment v3</span>
+      </div>
+      <div class="header-status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Checking API…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Nav tabs ─────────────────────────────────────────────────────────── -->
+  <nav class="main-nav">
+    <button class="nav-tab active" data-tab="submit">
+      <span class="nav-icon">📋</span> Submit Policy
+    </button>
+    <button class="nav-tab" data-tab="queue">
+      <span class="nav-icon">📥</span> Review Queue
+      <span class="queue-badge" id="queueBadge" style="display:none">0</span>
+    </button>
+    <button class="nav-tab" data-tab="audit">
+      <span class="nav-icon">📜</span> Audit Log
+    </button>
+    <button class="nav-tab" data-tab="devtools">
+      <span class="nav-icon">🛠</span> Dev Tools
+    </button>
+  </nav>
+
+  <main>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB 1 — Submit Policy
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="tab-panel active" id="tab-submit">
+
+      <div class="page-header">
+        <h1 class="page-title">Submit Policy for Assessment</h1>
+        <p class="page-desc">
+          Paste clauses or upload a PDF. The AI scores every clause, applies state-specific
+          regulations, rewrites risky language via Gemini, and routes to the appropriate review queue.
+        </p>
+      </div>
+
+      <div class="submit-grid">
+
+        <!-- Left: input form -->
+        <div class="card">
+          <h2 class="card-title">Policy Details</h2>
+
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Policy Type</label>
+              <select id="sPolicyType">
+                <option value="auto">Auto</option>
+                <option value="home">Home</option>
+                <option value="commercial" selected>Commercial</option>
+                <option value="life">Life</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">State</label>
+              <select id="sState">
+                <option value="TX">TX — Texas</option>
+                <option value="CA">CA — California</option>
+                <option value="NY">NY — New York</option>
+                <option value="FL">FL — Florida</option>
+                <option value="IL">IL — Illinois</option>
+                <option value="OH">OH — Ohio</option>
+                <option value="PA">PA — Pennsylvania</option>
+                <option value="GA">GA — Georgia</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Coverage Amount ($)</label>
+              <input type="number" id="sCoverage" value="1000000" min="1000" />
+            </div>
+            <div class="field">
+              <label class="field-label">Deductible ($)</label>
+              <select id="sDeductible">
+                <option value="500">$500</option>
+                <option value="1000" selected>$1,000</option>
+                <option value="2500">$2,500</option>
+                <option value="5000">$5,000</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Applicant Age</label>
+              <input type="number" id="sAge" value="40" min="18" max="100" />
+            </div>
+            <div class="field">
+              <label class="field-label">Prior Claims</label>
+              <input type="number" id="sClaims" value="0" min="0" max="20" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Submitted By</label>
+            <input type="text" id="sSubmitter" value="underwriter_1" />
+          </div>
+
+          <h2 class="card-title" style="margin-top:24px">Policy Clauses</h2>
+
+          <!-- PDF upload zone -->
+          <div class="upload-zone" id="pdfUploadZone"
+               ondragover="event.preventDefault()" ondrop="handlePdfDrop(event)">
+            <div class="upload-icon">📄</div>
+            <div>Drag & drop a PDF policy or</div>
+            <label class="btn-secondary upload-label" style="margin-top:6px">
+              Browse PDF
+              <input type="file" id="pdfFile" accept=".pdf" style="display:none"
+                     onchange="handlePdfSelect(event)" />
+            </label>
+            <div id="pdfStatus" style="font-size:12px;margin-top:6px;color:#718096"></div>
+          </div>
+
+          <div class="divider-or">— or type / paste clauses —</div>
+
+          <label class="field-label">Clauses (one per line)</label>
+          <textarea id="sClauses" rows="8"
+            placeholder="Each line is treated as one clause…"></textarea>
+
+          <div class="form-actions">
+            <button class="btn-primary" id="submitBtn" onclick="submitPolicy()">
+              ⚡ Submit for AI Assessment
+            </button>
+            <button class="btn-secondary" onclick="loadSubmitSample()">Load Sample</button>
+          </div>
+        </div>
+
+        <!-- Right: live result -->
+        <div id="submitResult" style="display:none">
+
+          <!-- Loading -->
+          <div class="card loading-card" id="submitLoading" style="display:none">
+            <div class="spinner"></div>
+            <p id="submitLoadingText">Assessing clauses…</p>
+          </div>
+
+          <!-- Submission summary -->
+          <div class="card" id="submitSummaryCard" style="display:none">
+            <div class="workflow-state-banner" id="wfStateBanner"></div>
+            <div class="bulk-summary" id="submitSummaryStats"></div>
+
+            <div id="stateFlagsAlert" class="state-alert" style="display:none"></div>
+
+            <div class="view-toggle-bar">
+              <button class="view-toggle active" id="btnCleanView" onclick="showSubmitView('clean')">Clean Policy</button>
+              <button class="view-toggle" id="btnDiffView" onclick="showSubmitView('diff')">Clause Diff</button>
+            </div>
+
+            <!-- Clean policy -->
+            <div id="submitViewClean">
+              <div class="generated-policy-box" id="submitCleanText"></div>
+            </div>
+
+            <!-- Clause diff -->
+            <div id="submitViewDiff" style="display:none">
+              <div id="submitDiffList"></div>
+            </div>
+
+            <div class="uw-action-bar" id="submitActionBar" style="display:none">
+              <div class="uw-action-label" id="submitActionLabel"></div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn-approve" id="btnApprove" onclick="finalizeSubmission('APPROVED')">
+                  ✓ Approve Policy
+                </button>
+                <button class="btn-reject" id="btnReject" onclick="finalizeSubmission('REJECTED')">
+                  ✗ Request Changes
+                </button>
+              </div>
+            </div>
+
+            <div class="decision-box" id="submitDecisionBox" style="display:none"></div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB 2 — Review Queue
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="tab-panel" id="tab-queue">
+
+      <div class="page-header">
+        <h1 class="page-title">Review Queue</h1>
+        <button class="btn-secondary" style="float:right" onclick="loadQueues()">↻ Refresh</button>
+      </div>
+
+      <!-- Sub-tabs -->
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-subtab="uw" onclick="switchSubTab('uw')">
+          Underwriter Queue <span class="queue-badge" id="uwQueueCount">0</span>
+        </button>
+        <button class="sub-tab" data-subtab="legal" onclick="switchSubTab('legal')">
+          Legal Queue <span class="queue-badge legal" id="legalQueueCount">0</span>
+        </button>
+      </div>
+
+      <!-- UW Queue -->
+      <div id="subtab-uw">
+        <div class="card" style="padding:0">
+          <table class="queue-table" id="uwQueueTable">
+            <thead>
+              <tr>
+                <th>ID</th><th>Type</th><th>State</th>
+                <th>Low</th><th>Medium</th><th>High</th>
+                <th>State Flags</th><th>Submitted</th><th>By</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="uwQueueBody">
+              <tr><td colspan="10" class="empty-row">No submissions awaiting review.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Legal Queue -->
+      <div id="subtab-legal" style="display:none">
+        <div class="card" style="padding:0">
+          <table class="queue-table" id="legalQueueTable">
+            <thead>
+              <tr>
+                <th>ID</th><th>Type</th><th>State</th>
+                <th>High</th><th>State Flags</th><th>Submitted</th><th>By</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="legalQueueBody">
+              <tr><td colspan="8" class="empty-row">No submissions in legal review.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Submission detail modal -->
+      <div id="reviewModal" class="modal" style="display:none">
+        <div class="modal-backdrop" onclick="closeModal()"></div>
+        <div class="modal-box">
+          <div class="modal-header">
+            <h2 id="modalTitle">Policy Review</h2>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+          </div>
+          <div id="modalBody"></div>
+          <div class="modal-footer" id="modalFooter"></div>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB 3 — Audit Log
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="tab-panel" id="tab-audit">
+
+      <div class="page-header">
+        <h1 class="page-title">Audit Trail</h1>
+        <button class="btn-secondary" style="float:right" onclick="loadAuditLog()">↻ Refresh</button>
+      </div>
+
+      <div class="card" style="padding:0">
+        <table class="queue-table" id="auditTable">
+          <thead>
+            <tr>
+              <th>Time</th><th>Submission</th><th>Event</th><th>Actor</th><th>Description</th>
+            </tr>
+          </thead>
+          <tbody id="auditBody">
+            <tr><td colspan="5" class="empty-row">No audit events yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB 4 — Dev Tools  (single clause + bulk, for testing)
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="tab-panel" id="tab-devtools">
+
+      <div class="page-header">
+        <h1 class="page-title">Developer Tools</h1>
+        <p class="page-desc">Quick single-clause and bulk testing against the raw API endpoints.</p>
+      </div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-subtab="single" onclick="switchDevTab('single')">Single Clause</button>
+        <button class="sub-tab" data-subtab="bulkdev" onclick="switchDevTab('bulkdev')">Bulk CSV</button>
+      </div>
+
+      <!-- Single clause -->
+      <div id="subtab-single">
+        <div class="panel-grid">
+          <div class="card">
+            <h2 class="card-title">Policy Clause</h2>
+
+            <label class="field-label">Clause Text</label>
+            <textarea id="clauseInput" rows="5"
+              placeholder="Paste or type a policy clause here…"></textarea>
+
+            <div class="form-row">
+              <div class="field">
+                <label class="field-label">Policy Type</label>
+                <select id="policyType">
+                  <option value="auto">Auto</option>
+                  <option value="home">Home</option>
+                  <option value="commercial" selected>Commercial</option>
+                  <option value="life">Life</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">State</label>
+                <select id="stateCode">
+                  <option value="TX">TX</option>
+                  <option value="CA">CA</option>
+                  <option value="NY">NY</option>
+                  <option value="FL">FL</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label class="field-label">Coverage ($)</label>
+                <input type="number" id="coverageAmount" value="500000" />
+              </div>
+              <div class="field">
+                <label class="field-label">Deductible ($)</label>
+                <select id="deductible">
+                  <option value="500">$500</option>
+                  <option value="1000" selected>$1,000</option>
+                  <option value="2500">$2,500</option>
+                  <option value="5000">$5,000</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label class="field-label">Age</label>
+                <input type="number" id="applicantAge" value="40" min="18" max="100" />
+              </div>
+              <div class="field">
+                <label class="field-label">Prior Claims</label>
+                <input type="number" id="priorClaims" value="0" />
+              </div>
+            </div>
+
+            <button class="btn-primary" id="assessBtn" onclick="assessClause()">Assess Risk</button>
+
+            <div class="sample-links">
+              Try:
+              <a href="#" onclick="loadSample('low');return false">Low</a> ·
+              <a href="#" onclick="loadSample('medium');return false">Medium</a> ·
+              <a href="#" onclick="loadSample('high');return false">High</a>
+            </div>
+          </div>
+
+          <div class="card" id="resultCard" style="display:none">
+            <h2 class="card-title">Assessment Result</h2>
+            <div class="risk-banner" id="riskBanner">
+              <div class="risk-label" id="riskLabel">—</div>
+              <div class="risk-sub">Risk Level</div>
+            </div>
+            <div class="confidence-row">
+              <span class="conf-label">Confidence</span>
+              <div class="conf-bar-wrap"><div class="conf-bar" id="confBar"></div></div>
+              <span class="conf-pct" id="confPct">0%</span>
+            </div>
+            <div class="prob-grid" id="probGrid"></div>
+            <div id="stateFlagsSection" style="display:none">
+              <h3 class="section-title">State Regulation Flags</h3>
+              <div id="stateFlagsList"></div>
+            </div>
+            <div id="flagsSection" style="display:none">
+              <h3 class="section-title">Risk Flags</h3>
+              <div id="flagsList"></div>
+            </div>
+            <div id="rewriteSection" style="display:none">
+              <h3 class="section-title">Gemini Rewrite</h3>
+              <div class="diff-box">
+                <div class="diff-label diff-old">Original</div>
+                <div class="diff-text" id="origText"></div>
+                <div class="diff-label diff-new">Suggested</div>
+                <div class="diff-text diff-new-text" id="newText"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card loading-card" id="loadingCard" style="display:none">
+            <div class="spinner"></div>
+            <p>Analysing clause…</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk CSV -->
+      <div id="subtab-bulkdev" style="display:none">
+        <div class="card">
+          <h2 class="card-title">Bulk Policy Screening</h2>
+          <p class="card-desc">CSV with a <code>clause</code> column. Optional: <code>policy_type, state, coverage_amount, applicant_age, prior_claims_count, deductible_amount</code></p>
+          <div class="upload-zone" id="uploadZone"
+               ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+            <div class="upload-icon">📄</div>
+            <div>Drag & drop a CSV or</div>
+            <label class="btn-secondary upload-label">
+              Browse File
+              <input type="file" id="csvFile" accept=".csv" style="display:none"
+                     onchange="handleFileSelect(event)" />
+            </label>
+          </div>
+          <div id="bulkProgress" style="display:none">
+            <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+            <p id="progressText">Processing…</p>
+          </div>
+          <div id="bulkResults" style="display:none">
+            <div class="bulk-summary" id="bulkSummary"></div>
+            <table class="results-table" id="resultsTable">
+              <thead>
+                <tr><th>Clause</th><th>Risk</th><th>Confidence</th><th>Flags</th></tr>
+              </thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+            <button class="btn-secondary" onclick="downloadResults()">Download CSV</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
