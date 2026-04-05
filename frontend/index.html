@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guidewire PolicyCenter — AI Risk Assessment</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            themeBg: '#eff6f8',
+            themeTeal: '#42645f',
+            themeGold: '#e0d08b',
+            themeSurface: '#fafdfe',
+            themeBlue: '#2b7d94',
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          boxShadow: {
+            'premium': '0 4px 20px -2px rgba(43, 125, 148, 0.08), 0 0 3px rgba(43, 125, 148, 0.04)',
+            'premium-hover': '0 10px 30px -4px rgba(43, 125, 148, 0.12), 0 0 4px rgba(43, 125, 148, 0.05)',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-themeBg text-slate-800 font-sans min-h-screen antialiased selection:bg-themeBlue selection:text-white">
+
+  <header class="bg-themeSurface/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 h-16 display flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-themeBlue to-themeTeal flex items-center justify-center text-white shadow-md shadow-themeBlue/20">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span class="font-extrabold text-xl tracking-tight text-slate-900">PolicyCenter</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-themeBlue bg-themeBlue/10 px-2.5 py-0.5 rounded-full border border-themeBlue/20 hidden sm:block">AI Risk Assessment v3</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 bg-themeBg border border-gray-200 px-4 py-1.5 rounded-full shadow-sm">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText" class="text-xs font-semibold text-slate-600 tracking-wide">Checking API…</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="bg-themeSurface/80 backdrop-blur-md border-b border-gray-200 sticky top-16 z-40">
+    <div class="max-w-7xl mx-auto px-6 flex overflow-x-auto hide-scrollbar">
+      <button class="nav-tab active" data-tab="submit">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Submit Policy
+      </button>
+      <button class="nav-tab" data-tab="queue">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+        Review Queue
+        <span class="queue-badge" id="queueBadge" style="display:none">0</span>
+      </button>
+      <button class="nav-tab" data-tab="audit">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+        Audit Log
+      </button>
+      <button class="nav-tab" data-tab="devtools">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+        Dev Tools
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-6 py-10">
+
+    <section class="tab-panel active animate-fade-in" id="tab-submit">
+
+      <div class="mb-10 max-w-2xl">
+        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-3">Submit Policy for Assessment</h1>
+        <p class="text-slate-600 leading-relaxed text-sm">
+          Paste clauses or upload a PDF. The AI scores every clause, applies state-specific
+          regulations, rewrites risky language via Gemini, and routes to the appropriate review queue.
+        </p>
+      </div>
+
+      <div class="flex flex-col lg:flex-row gap-8 items-start">
+
+        <div class="w-full lg:w-[480px] shrink-0 bg-themeSurface rounded-2xl shadow-premium border border-gray-100 p-8">
+          <h2 class="section-heading">Policy Details</h2>
+
+          <div class="grid grid-cols-2 gap-5 mb-5">
+            <div>
+              <label class="field-label">Policy Type</label>
+              <select id="sPolicyType" class="form-input">
+                <option value="auto">Auto</option>
+                <option value="home">Home</option>
+                <option value="commercial" selected>Commercial</option>
+                <option value="life">Life</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">State</label>
+              <select id="sState" class="form-input">
+                <option value="TX">TX — Texas</option>
+                <option value="CA">CA — California</option>
+                <option value="NY">NY — New York</option>
+                <option value="FL">FL — Florida</option>
+                <option value="IL">IL — Illinois</option>
+                <option value="OH">OH — Ohio</option>
+                <option value="PA">PA — Pennsylvania</option>
+                <option value="GA">GA — Georgia</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-5 mb-5">
+            <div>
+              <label class="field-label">Coverage Amount ($)</label>
+              <input type="number" id="sCoverage" class="form-input" value="1000000" min="1000" />
+            </div>
+            <div>
+              <label class="field-label">Deductible ($)</label>
+              <select id="sDeductible" class="form-input">
+                <option value="500">$500</option>
+                <option value="1000" selected>$1,000</option>
+                <option value="2500">$2,500</option>
+                <option value="5000">$5,000</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-5 mb-5">
+            <div>
+              <label class="field-label">Applicant Age</label>
+              <input type="number" id="sAge" class="form-input" value="40" min="18" max="100" />
+            </div>
+            <div>
+              <label class="field-label">Prior Claims</label>
+              <input type="number" id="sClaims" class="form-input" value="0" min="0" max="20" />
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <label class="field-label">Submitted By</label>
+            <input type="text" id="sSubmitter" class="form-input" value="underwriter_1" />
+          </div>
+
+          <h2 class="section-heading">Policy Clauses</h2>
+
+          <div class="upload-zone" id="pdfUploadZone"
+               ondragover="event.preventDefault()" ondrop="handlePdfDrop(event)">
+            <svg class="w-8 h-8 text-themeBlue mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <div class="text-sm font-medium text-slate-600">Drag & drop a PDF policy or</div>
+            <label class="mt-3 bg-white border border-gray-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
+              Browse PDF
+              <input type="file" id="pdfFile" accept=".pdf" class="hidden" onchange="handlePdfSelect(event)" />
+            </label>
+            <div id="pdfStatus" class="text-xs mt-3 font-medium text-slate-500"></div>
+          </div>
+
+          <div class="flex items-center gap-4 my-6">
+            <div class="h-px bg-gray-200 flex-1"></div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">OR TYPE MANUAL</span>
+            <div class="h-px bg-gray-200 flex-1"></div>
+          </div>
+
+          <label class="field-label">Clauses (one per line)</label>
+          <textarea id="sClauses" rows="6" class="form-input font-mono text-xs leading-relaxed resize-y"
+            placeholder="Each line is treated as one clause…"></textarea>
+
+          <div class="flex gap-3 mt-6">
+            <button class="flex-1 bg-themeBlue text-white font-bold text-sm py-3.5 rounded-xl shadow-md shadow-themeBlue/20 hover:-translate-y-0.5 hover:shadow-lg transition-all flex justify-center items-center gap-2" id="submitBtn" onclick="submitPolicy()">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+              Assess Risk
+            </button>
+            <button class="px-5 bg-themeBg text-themeTeal border border-gray-200 font-bold text-xs uppercase tracking-wide rounded-xl hover:bg-gray-100 transition-colors" onclick="loadSubmitSample()">Sample</button>
+          </div>
+        </div>
+
+        <div id="submitResult" class="flex-1 w-full hidden">
+
+          <div class="bg-themeSurface rounded-2xl shadow-premium border border-gray-100 p-12 flex flex-col items-center justify-center min-h-[400px]" id="submitLoading" style="display:none">
+            <div class="w-12 h-12 border-4 border-themeBg border-t-themeBlue rounded-full animate-spin mb-4"></div>
+            <p id="submitLoadingText" class="text-slate-500 font-medium text-sm">Assessing clauses…</p>
+          </div>
+
+          <div class="bg-themeSurface rounded-2xl shadow-premium border border-gray-100 p-8" id="submitSummaryCard" style="display:none">
+            <div class="workflow-state-banner" id="wfStateBanner"></div>
+            <div class="bulk-summary" id="submitSummaryStats"></div>
+
+            <div id="stateFlagsAlert" class="state-alert" style="display:none"></div>
+
+            <div class="view-toggle-bar">
+              <button class="view-toggle active" id="btnCleanView" onclick="showSubmitView('clean')">Clean Policy</button>
+              <button class="view-toggle" id="btnDiffView" onclick="showSubmitView('diff')">Clause Diff</button>
+            </div>
+
+            <div id="submitViewClean">
+              <div class="generated-policy-box" id="submitCleanText"></div>
+            </div>
+
+            <div id="submitViewDiff" style="display:none">
+              <div id="submitDiffList"></div>
+            </div>
+
+            <div class="uw-action-bar" id="submitActionBar" style="display:none">
+              <div class="uw-action-label" id="submitActionLabel"></div>
+              <div class="flex gap-3 flex-wrap">
+                <button class="btn-approve" id="btnApprove" onclick="finalizeSubmission('APPROVED')">
+                  ✓ Approve Policy
+                </button>
+                <button class="btn-reject" id="btnReject" onclick="finalizeSubmission('REJECTED')">
+                  ✕ Request Changes
+                </button>
+              </div>
+            </div>
+
+            <div class="decision-box" id="submitDecisionBox" style="display:none"></div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <section class="tab-panel animate-fade-in" id="tab-queue">
+
+      <div class="flex justify-between items-end mb-8">
+        <div>
+          <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Review Queue</h1>
+        </div>
+        <button class="bg-white border border-gray-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-gray-50 shadow-sm transition-all" onclick="loadQueues()">↻ Refresh</button>
+      </div>
+
+      <div class="flex gap-6 border-b border-gray-200 mb-8">
+        <button class="sub-tab active" data-subtab="uw" onclick="switchSubTab('uw')">
+          Underwriter Queue <span class="queue-badge bg-themeBlue" id="uwQueueCount">0</span>
+        </button>
+        <button class="sub-tab" data-subtab="legal" onclick="switchSubTab('legal')">
+          Legal Queue <span class="queue-badge bg-purple-600" id="legalQueueCount">0</span>
+        </button>
+      </div>
+
+      <div id="subtab-uw">
+        <div class="bg-themeSurface rounded-2xl shadow-premium border border-gray-100 overflow-hidden">
+          <table class="queue-table w-full" id="uwQueueTable">
+            <thead>
+              <tr>
+                <th>ID</th><th>Type</th><th>State</th>
+                <th>Low</th><th>Medium</th><th>High</th>
+                <th>State Flags</th><th>Submitted</th><th>By</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="uwQueueBody">
+              <tr><td colspan="10" class="empty-row">No submissions awaiting review.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="subtab-legal" style="display:none">
+        <div class="bg-themeSurface rounded-2xl shadow-premium border border-gray-100 overflow-hidden">
+          <table class="queue-table w-full" id="legalQueueTable">
+            <thead>
+              <tr>
+                <th>ID</th><th>Type</th><th>State</th>
+                <th>High</th><th>State Flags</th><th>Submitted</th><th>By</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="legalQueueBody">
+              <tr><td colspan="8" class="empty-row">No submissions in legal review.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="reviewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="relative bg-themeSurface border border-gray-100 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl animate-fade-up">
+          <div class="flex justify-between items-center px-8 py-5 border-b border-gray-100 bg-white rounded-t-2xl">
+            <h2 id="modalTitle" class="text-lg font-bold text-slate-800">Policy Review</h2>
+            <button class="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-gray-100 transition-colors" onclick="closeModal()">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+          <div id="modalBody" class="flex-1 overflow-y-auto p-8 bg-themeBg"></div>
+          <div class="px-8 py-5 border-t border-gray-100 bg-white rounded-b-2xl flex items-center gap-3" id="modalFooter"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="tab-panel animate-fade-in" id="tab-audit">
+      <div class="flex justify-between items-end mb-8">
+        <div>
+          <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Audit Trail</h1>
+        </div>
+        <button class="bg-white border border-gray-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-gray-50 shadow-sm transition-all" onclick="loadAuditLog()">↻ Refresh</button>
+      </div>
+
+      <div class="bg-themeSurface rounded-2xl shadow-premium border border-gray-100 overflow-hidden">
+        <table class="queue-table w-full" id="auditTable">
+          <thead>
+            <tr>
+              <th>Time</th><th>Submission</th><th>Event</th><th>Actor</th><th>Description</th>
+            </tr>
+          </thead>
+          <tbody id="auditBody">
+            <tr><td colspan="5" class="empty-row">No audit events yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="tab-panel animate-fade-in" id="tab-devtools">
+      <div class="mb-8">
+        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Developer Tools</h1>
+        <p class="text-slate-600 text-sm">Quick single-clause and bulk testing against the raw API endpoints.</p>
+      </div>
+
+      <div class="flex gap-6 border-b border-gray-200 mb-8">
+        <button class="sub-tab active" data-subtab="single" onclick="switchDevTab('single')">Single Clause</button>
+        <button class="sub-tab" data-subtab="bulkdev" onclick="switchDevTab('bulkdev')">Bulk CSV</button>
+      </div>
+
+      <div id="subtab-single">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="bg-themeSurface rounded-2xl shadow-premium border border-gray-100 p-8">
+            <h2 class="section-heading">Policy Clause</h2>
+
+            <label class="field-label">Clause Text</label>
+            <textarea id="clauseInput" rows="4" class="form-input mb-5" placeholder="Paste or type a policy clause here…"></textarea>
+
+            <div class="grid grid-cols-2 gap-5 mb-5">
+              <div>
+                <label class="field-label">Policy Type</label>
+                <select id="policyType" class="form-input"><option value="auto">Auto</option><option value="home">Home</option><option value="commercial" selected>Commercial</option><option value="life">Life</option></select>
+              </div>
+              <div>
+                <label class="field-label">State</label>
+                <select id="stateCode" class="form-input"><option value="TX">TX</option><option value="CA">CA</option><option value="NY">NY</option><option value="FL">FL</option></select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-5 mb-5">
+              <div>
+                <label class="field-label">Coverage ($)</label>
+                <input type="number" id="coverageAmount" class="form-input" value="500000" />
+              </div>
+              <div>
+                <label class="field-label">Deductible ($)</label>
+                <select id="deductible" class="form-input"><option value="500">$500</option><option value="1000" selected>$1,000</option><option value="2500">$2,500</option><option value="5000">$5,000</option></select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-5 mb-6">
+              <div>
+                <label class="field-label">Age</label>
+                <input type="number" id="applicantAge" class="form-input" value="40" min="18" max="100" />
+              </div>
+              <div>
+                <label class="field-label">Prior Claims</label>
+                <input type="number" id="priorClaims" class="form-input" value="0" />
+              </div>
+            </div>
+
+            <button class="w-full bg-themeBlue text-white font-bold text-sm py-3.5 rounded-xl shadow-md shadow-themeBlue/20 hover:-translate-y-0.5 hover:shadow-lg transition-all" id="assessBtn" onclick="assessClause()">Assess Risk</button>
+
+            <div class="mt-5 text-xs text-slate-500 font-medium text-center">
+              Try Sample:
+              <a href="#" class="text-themeBlue hover:underline mx-1" onclick="loadSample('low');return false">Low</a> ·
+              <a href="#" class="text-themeGold hover:underline mx-1" onclick="loadSample('medium');return false">Medium</a> ·
+              <a href="#" class="text-red-500 hover:underline mx-1" onclick="loadSample('high');return false">High</a>
+            </div>
+          </div>
+
+          <div class="bg-themeSurface rounded-2xl shadow-premium border border-gray-100 p-8" id="resultCard" style="display:none">
+            <h2 class="section-heading">Assessment Result</h2>
+            <div class="risk-banner" id="riskBanner">
+              <div class="risk-label" id="riskLabel">—</div>
+              <div class="text-[10px] font-bold uppercase tracking-widest opacity-80 mt-1">Risk Level</div>
+            </div>
+            
+            <div class="flex items-center gap-4 mb-6">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Confidence</span>
+              <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-themeBlue rounded-full transition-all duration-700" id="confBar"></div>
+              </div>
+              <span class="text-sm font-bold text-slate-800 w-10 text-right font-mono" id="confPct">0%</span>
+            </div>
+            
+            <div class="prob-grid" id="probGrid"></div>
+            
+            <div id="stateFlagsSection" style="display:none" class="mt-6">
+              <h3 class="section-heading text-slate-500">State Regulation Flags</h3>
+              <div id="stateFlagsList"></div>
+            </div>
+            
+            <div id="flagsSection" style="display:none" class="mt-6">
+              <h3 class="section-heading text-slate-500">Risk Flags</h3>
+              <div id="flagsList" class="flex flex-wrap gap-2"></div>
+            </div>
+            
+            <div id="rewriteSection" style="display:none" class="mt-6">
+              <h3 class="section-heading text-slate-500">AI Rewrite Suggestion</h3>
+              <div class="border border-gray-200 rounded-xl overflow-hidden mt-3 text-sm">
+                <div class="bg-red-50 text-red-700 font-bold text-[10px] uppercase tracking-wider px-4 py-2 border-b border-red-100">Original</div>
+                <div class="p-4 bg-white text-slate-600 font-mono text-xs leading-relaxed" id="origText"></div>
+                <div class="bg-emerald-50 text-emerald-700 font-bold text-[10px] uppercase tracking-wider px-4 py-2 border-y border-emerald-100">Suggested</div>
+                <div class="p-4 bg-white text-emerald-800 font-mono text-xs leading-relaxed" id="newText"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-themeSurface rounded-2xl shadow-premium border border-gray-100 p-12 flex flex-col items-center justify-center" id="loadingCard" style="display:none">
+            <div class="w-12 h-12 border-4 border-themeBg border-t-themeBlue rounded-full animate-spin mb-4"></div>
+            <p class="text-slate-500 font-medium text-sm">Analysing clause…</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="subtab-bulkdev" style="display:none">
+        <div class="bg-themeSurface rounded-2xl shadow-premium border border-gray-100 p-8 max-w-4xl">
+          <h2 class="section-heading">Bulk Policy Screening</h2>
+          <p class="text-sm text-slate-500 mb-6">Upload a CSV file containing a <code class="bg-gray-100 text-themeBlue px-1.5 py-0.5 rounded text-xs">clause</code> column.</p>
+          
+          <div class="upload-zone" id="uploadZone" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+            <svg class="w-10 h-10 text-themeTeal mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <div class="text-sm font-medium text-slate-600">Drag & drop a CSV file here</div>
+            <label class="mt-4 bg-white border border-gray-200 text-slate-700 px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
+              Browse File
+              <input type="file" id="csvFile" accept=".csv" class="hidden" onchange="handleFileSelect(event)" />
+            </label>
+          </div>
+          
+          <div id="bulkProgress" class="mt-6 hidden">
+            <div class="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+              <div class="h-full bg-themeBlue transition-all duration-300" id="progressBar"></div>
+            </div>
+            <p id="progressText" class="text-xs text-slate-500 font-medium text-center">Processing…</p>
+          </div>
+          
+          <div id="bulkResults" class="mt-8 hidden">
+            <div class="bulk-summary" id="bulkSummary"></div>
+            <div class="overflow-x-auto border border-gray-100 rounded-xl my-6">
+              <table class="queue-table w-full" id="resultsTable">
+                <thead><tr><th>Clause</th><th>Risk</th><th>Confidence</th><th>Flags</th></tr></thead>
+                <tbody id="resultsBody"></tbody>
+              </table>
+            </div>
+            <button class="bg-white border border-gray-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-gray-50 shadow-sm transition-all" onclick="downloadResults()">↓ Download CSV</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
