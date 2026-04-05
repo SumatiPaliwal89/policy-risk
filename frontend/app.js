@@ -1,6 +1,6 @@
 /* app.js — Guidewire AI Risk Assessment v3 */
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = "https://policy-risk.onrender.com";
 
 // ── Sample data ───────────────────────────────────────────────────────────────
 const SAMPLES = {
