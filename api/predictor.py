@@ -66,7 +66,7 @@ class Predictor:
         self._load_gemini()
 
     def _load_gemini(self):
-        api_key = os.environ.get("GEMINI_API_KEY", "")
+        api_key = os.environ.get("GEMINI_API_KEY", "AIzaSyB--Ev3qtA9aGNZW3y473LyVdrsOkdyl2g")
         if not api_key:
             print("GEMINI_API_KEY not set — rewriting unavailable.")
             return
